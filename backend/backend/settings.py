@@ -39,13 +39,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'rest_framework.authtoken',   
-    'corsheaders'
-    'posts',
-    'friends',
-    'notifications',
-    'users',
-
+    'rest_framework.authtoken',
+    'corsheaders',
+    'posts.apps.PostsConfig',
+    'friends.apps.FriendsConfig',
+    'notifications.apps.NotificationsConfig',
+    'users.apps.UsersConfig',
 ]
 
 MIDDLEWARE = [
@@ -138,3 +137,5 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     )
 }
+
+AUTH_USER_MODEL = 'users.User'

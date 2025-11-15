@@ -7,7 +7,6 @@ class User(AbstractUser):
         'self',
         symmetrical=True,
         blank=True,
-        related_name='friends_with'
     )
 
     bio = models.TextField(blank=True, null=True)
