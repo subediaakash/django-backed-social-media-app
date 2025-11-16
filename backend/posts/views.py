@@ -15,7 +15,8 @@ class PostListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         return (
-            Post.objects.select_related('author')
+            Post.objects.filter(group__isnull=True)
+            .select_related('author')
             .prefetch_related('comments__author')
             .order_by('-created_at')
         )
@@ -27,18 +28,29 @@ class PostListCreateView(generics.ListCreateAPIView):
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
-    queryset = Post.objects.select_related('author').prefetch_related('comments__author')
+    queryset = Post.objects.select_related('author', 'group').prefetch_related('comments__author')
+
+    def get_object(self):
+        post = super().get_object()
+        self._ensure_group_access(post)
+        return post
 
     def perform_update(self, serializer):
         post = self.get_object()
         if post.author != self.request.user:
             raise PermissionDenied('You can only update your own posts.')
+        self._ensure_group_access(post)
         serializer.save()
 
     def perform_destroy(self, instance):
+        self._ensure_group_access(instance)
         if instance.author != self.request.user:
             raise PermissionDenied('You can only delete your own posts.')
         instance.delete()
+
+    def _ensure_group_access(self, post):
+        if post.group_id and not post.group.members.filter(pk=self.request.user.pk).exists():
+            raise PermissionDenied('You must be a member of this group to access this post.')
 
 
 class CommentListCreateView(generics.ListCreateAPIView):
@@ -47,11 +59,13 @@ class CommentListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         post_id = self.kwargs['post_id']
-        get_object_or_404(Post, pk=post_id)
+        post = get_object_or_404(Post.objects.select_related('group'), pk=post_id)
+        self._ensure_group_access(post)
         return Comment.objects.filter(post_id=post_id).select_related('author', 'post').order_by('created_at')
 
     def perform_create(self, serializer):
-        post = get_object_or_404(Post, pk=self.kwargs['post_id'])
+        post = get_object_or_404(Post.objects.select_related('group'), pk=self.kwargs['post_id'])
+        self._ensure_group_access(post)
         serializer.save(author=self.request.user, post=post)
         Post.objects.filter(pk=post.pk).update(comments_count=F('comments_count') + 1)
 
@@ -63,16 +77,19 @@ class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         post_id = self.kwargs['post_id']
-        get_object_or_404(Post, pk=post_id)
+        post = get_object_or_404(Post.objects.select_related('group'), pk=post_id)
+        self._ensure_group_access(post)
         return Comment.objects.filter(post_id=post_id).select_related('author', 'post')
 
     def perform_update(self, serializer):
         comment = self.get_object()
+        self._ensure_group_access(comment.post)
         if comment.author != self.request.user:
             raise PermissionDenied('You can only edit your own comments.')
         serializer.save()
 
     def perform_destroy(self, instance):
+        self._ensure_group_access(instance.post)
         if instance.author != self.request.user:
             raise PermissionDenied('You can only delete your own comments.')
         instance.delete()
@@ -80,12 +97,18 @@ class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
             comments_count=F('comments_count') - 1
         )
 
+    def _ensure_group_access(self, post):
+        if post.group_id and not post.group.members.filter(pk=self.request.user.pk).exists():
+            raise PermissionDenied('You must be a member of this group to interact with comments here.')
+
 
 class LikeToggleView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, post_id):
-        post = get_object_or_404(Post, pk=post_id)
+        post = get_object_or_404(Post.objects.select_related('group'), pk=post_id)
+        if post.group_id and not post.group.members.filter(pk=request.user.pk).exists():
+            raise PermissionDenied('You must be a member of this group to like this post.')
         like, created = Like.objects.get_or_create(user=request.user, post=post)
         if created:
             Post.objects.filter(pk=post_id).update(likes_count=F('likes_count') + 1)

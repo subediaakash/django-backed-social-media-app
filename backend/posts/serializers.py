@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+from groups.models import Group
 from .models import Comment, Like, Post
 
 
@@ -72,12 +73,23 @@ class LikeSerializer(serializers.ModelSerializer):
         ]
 
 
+class GroupSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = [
+            'id',
+            'name',
+            'description',
+        ]
+
+
 class PostSerializer(serializers.ModelSerializer):
     author = PostAuthorSerializer(read_only=True)
     createdAt = serializers.DateTimeField(source='created_at', read_only=True)
     likesCount = serializers.IntegerField(source='likes_count', read_only=True)
     commentsCount = serializers.IntegerField(source='comments_count', read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
+    group = GroupSummarySerializer(read_only=True)
 
     class Meta:
         model = Post
@@ -89,6 +101,7 @@ class PostSerializer(serializers.ModelSerializer):
             'likesCount',
             'commentsCount',
             'comments',
+            'group',
         ]
         read_only_fields = [
             'id',
@@ -97,6 +110,7 @@ class PostSerializer(serializers.ModelSerializer):
             'likesCount',
             'commentsCount',
             'comments',
+            'group',
         ]
 
     def validate_content(self, value):

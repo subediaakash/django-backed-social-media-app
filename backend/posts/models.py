@@ -7,6 +7,13 @@ class Post(models.Model):
         on_delete=models.CASCADE,
         related_name='posts'
     )
+    group = models.ForeignKey(
+        'groups.Group',
+        on_delete=models.CASCADE,
+        related_name='group_posts',
+        null=True,
+        blank=True,
+    )
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -23,6 +30,8 @@ class Post(models.Model):
     )
 
     def __str__(self):
+        if self.group_id:
+            return f'Post in {self.group.name} by {self.author.username} at {self.created_at:%Y-%m-%d %H:%M}'
         return f'Post by {self.author.username} at {self.created_at:%Y-%m-%d %H:%M}'
 
 

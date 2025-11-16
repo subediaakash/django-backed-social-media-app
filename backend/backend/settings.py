@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'friends.apps.FriendsConfig',
     'notifications.apps.NotificationsConfig',
     'users.apps.UsersConfig',
+    'groups.apps.GroupsConfig',
 ]
 
 MIDDLEWARE = [

@@ -5,10 +5,10 @@ from .models import Comment, Like, Post
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ('id', 'author', 'created_at', 'likes_count', 'comments_count')
-    list_filter = ('created_at',)
-    search_fields = ('author__username', 'content')
-    autocomplete_fields = ('author',)
+    list_display = ('id', 'author', 'group', 'created_at', 'likes_count', 'comments_count')
+    list_filter = ('created_at', 'group')
+    search_fields = ('author__username', 'content', 'group__name')
+    autocomplete_fields = ('author', 'group')
 
 
 @admin.register(Like)
