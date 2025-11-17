@@ -1,8 +1,13 @@
 "use client";
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import { useSetAtom } from "jotai";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import type { AuthState, AuthTokens, AuthUser } from "@/atom/authAtom";
+import { setAuthAtom } from "@/atom/authAtom";
+import { ApiError, apiRequest } from "@/lib/apiClient";
 
 const demoCredentials = {
   email: "demo2@example.com",
@@ -11,25 +16,63 @@ const demoCredentials = {
 
 type SigninField = keyof typeof demoCredentials;
 
+type SigninResponse = {
+  user: AuthUser;
+  tokens: AuthTokens;
+};
+
 export default function SigninForm() {
   const [formValues, setFormValues] = React.useState(demoCredentials);
-  const [isSubmitted, setIsSubmitted] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const setAuth = useSetAtom(setAuthAtom);
+  const navigate = useNavigate();
 
   const handleChange =
     (field: SigninField) =>
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
-      setFormValues((prev) => ({
-        ...prev,
-        [field]: value,
-      }));
+      setFormValues((prev) => {
+        const next = {
+          ...prev,
+          [field]: value,
+        };
+        console.log("Signin form values", next);
+        return next;
+      });
     };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    console.log("Signin request payload:", formValues);
-    setIsSubmitted(true);
-    window.setTimeout(() => setIsSubmitted(false), 2500);
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const response = await apiRequest<SigninResponse, typeof formValues>(
+        "/auth/login/",
+        {
+          method: "POST",
+          body: formValues,
+        },
+      );
+
+      const authState: AuthState = {
+        tokens: response.tokens,
+        user: response.user,
+      };
+
+      setAuth(authState);
+      navigate("/");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Unable to sign in. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -68,7 +111,7 @@ export default function SigninForm() {
         </section>
 
         <section className="relative bg-white p-8 text-neutral-900 sm:p-10">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,214,165,0.2),transparent_60%)]" />
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(255,214,165,0.2),transparent_60%)]" />
           <div className="relative space-y-3">
             <span className="inline-flex w-fit items-center gap-2 rounded-full border border-rose-100 bg-white/60 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#bc1888]">
               Sign in
@@ -108,17 +151,16 @@ export default function SigninForm() {
             </LabelInputContainer>
 
             <button
-              className="group/btn relative inline-flex h-11 w-full items-center justify-center overflow-hidden rounded-xl bg-linear-to-r from-[#f09433] via-[#e6683c] to-[#bc1888] px-6 font-medium text-white shadow-lg shadow-rose-200/60 transition duration-300 hover:shadow-rose-300/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f09433]/60"
+              className="group/btn relative inline-flex h-11 w-full items-center justify-center overflow-hidden rounded-xl bg-linear-to-r from-[#f09433] via-[#e6683c] to-[#bc1888] px-6 font-medium text-white shadow-lg shadow-rose-200/60 transition duration-300 hover:shadow-rose-300/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f09433]/60 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isSubmitting}
               type="submit"
             >
-              Sign in
+              {isSubmitting ? "Signing in..." : "Sign in"}
               <BottomGradient />
             </button>
 
-            {isSubmitted && (
-              <p className="text-sm font-medium text-[#bc1888]">
-                Login details submitted! Check the console for the payload.
-              </p>
+            {error && (
+              <p className="text-sm font-medium text-rose-500">{error}</p>
             )}
           </form>
         </section>

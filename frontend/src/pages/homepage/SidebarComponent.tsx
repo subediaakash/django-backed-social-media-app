@@ -13,11 +13,15 @@ type SidebarComponentProps = {
     name: string;
     title: string;
   };
+  onLogout?: () => void;
+  isLoggingOut?: boolean;
 };
 
 export default function SidebarComponent({
   navigation,
   user,
+  onLogout,
+  isLoggingOut = false,
 }: SidebarComponentProps) {
   return (
     <CardComponent className="flex h-full flex-col justify-between p-5">
@@ -54,8 +58,13 @@ export default function SidebarComponent({
             <p>{user.title}</p>
           </div>
         </div>
-        <button className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-xl border border-rose-100 text-sm font-semibold text-[#bc1888] transition hover:border-[#f39c6b] hover:bg-[#ffe6f2]">
-          Logout
+        <button
+          className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-xl border border-rose-100 text-sm font-semibold text-[#bc1888] transition hover:border-[#f39c6b] hover:bg-[#ffe6f2] disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isLoggingOut}
+          onClick={onLogout}
+          type="button"
+        >
+          {isLoggingOut ? "Signing out..." : "Logout"}
         </button>
       </CardComponent>
     </CardComponent>
