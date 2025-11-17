@@ -1,5 +1,6 @@
 "use client";
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import CardComponent from "@/pages/homepage/CardComponent";
 
 type NavigationItem = {
@@ -36,16 +37,32 @@ export default function SidebarComponent({
         </div>
         <nav className="space-y-3">
           {navigation.map((item) => (
-            <Link
-              className="group flex items-center justify-between rounded-2xl border border-transparent px-4 py-3 text-sm font-semibold text-neutral-600 transition hover:border-[#f9a8d4] hover:bg-[#fff0f5] hover:text-[#bc1888]"
+            <NavLink
+              className={({ isActive }) =>
+                cn(
+                  "group flex items-center justify-between rounded-2xl border px-4 py-3 text-sm font-semibold transition",
+                  isActive
+                    ? "border-[#f9a8d4] bg-[#fff0f5] text-[#bc1888]"
+                    : "border-transparent text-neutral-600 hover:border-[#f9a8d4] hover:bg-[#fff0f5] hover:text-[#bc1888]",
+                )
+              }
               key={item.label}
               to={item.to}
             >
-              {item.label}
-              <span className="text-xs font-medium text-[#f39c6b] opacity-0 transition group-hover:opacity-100">
-                →
-              </span>
-            </Link>
+              {({ isActive }) => (
+                <>
+                  {item.label}
+                  <span
+                    className={cn(
+                      "text-xs font-medium text-[#f39c6b] opacity-0 transition",
+                      isActive ? "opacity-100" : "group-hover:opacity-100",
+                    )}
+                  >
+                    →
+                  </span>
+                </>
+              )}
+            </NavLink>
           ))}
         </nav>
       </div>

@@ -34,7 +34,11 @@ const storage = typeof window === "undefined"
     ? undefined
     : createJSONStorage<AuthState>(() => window.localStorage);
 
-export const authAtom = atomWithStorage<AuthState>(AUTH_STORAGE_KEY, defaultAuthState, storage);
+export const authAtom = atomWithStorage<AuthState>(
+    AUTH_STORAGE_KEY,
+    defaultAuthState,
+    storage,
+);
 
 export const isAuthenticatedAtom = atom((get) => {
     const state = get(authAtom);
