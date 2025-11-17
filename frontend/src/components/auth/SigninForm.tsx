@@ -1,0 +1,167 @@
+"use client";
+import React from "react";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+
+const demoCredentials = {
+  email: "demo2@example.com",
+  password: "StrongPass123!",
+};
+
+type SigninField = keyof typeof demoCredentials;
+
+export default function SigninForm() {
+  const [formValues, setFormValues] = React.useState(demoCredentials);
+  const [isSubmitted, setIsSubmitted] = React.useState(false);
+
+  const handleChange =
+    (field: SigninField) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+      setFormValues((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    console.log("Signin request payload:", formValues);
+    setIsSubmitted(true);
+    window.setTimeout(() => setIsSubmitted(false), 2500);
+  };
+
+  return (
+    <div className="relative mx-auto w-full max-w-4xl overflow-hidden rounded-[44px] border border-rose-100 bg-white/95 shadow-2xl shadow-rose-200/50 backdrop-blur">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(255,214,165,0.35),transparent_65%)]" />
+      <div className="relative grid overflow-hidden md:grid-cols-[1.05fr_0.95fr]">
+        <section className="relative hidden flex-col justify-between bg-linear-to-br from-[#f09433] via-[#e6683c] to-[#bc1888] p-10 text-white md:flex">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),transparent_70%)] opacity-80" />
+          <div className="relative space-y-6">
+            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
+              Welcome back
+            </span>
+            <h1 className="text-3xl font-semibold leading-tight md:text-4xl">
+              Pick up the conversations that matter to you.
+            </h1>
+            <p className="max-w-sm text-sm text-white/85">
+              Catch the latest updates from your circles, respond to new
+              comments, and jump back into threads where your voice makes a
+              difference.
+            </p>
+          </div>
+          <ul className="relative space-y-4 text-sm text-white/90">
+            <SigninFeature
+              title="Live activity feed"
+              description="See who mentioned you, which posts are trending, and where your attention is needed."
+            />
+            <SigninFeature
+              title="Drafts on every device"
+              description="Continue a post from mobile or desktop without losing your creative momentum."
+            />
+            <SigninFeature
+              title="Community notifications"
+              description="Real-time alerts from your favorite groups ensure you never miss a key moment."
+            />
+          </ul>
+        </section>
+
+        <section className="relative bg-white p-8 text-neutral-900 sm:p-10">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,214,165,0.2),transparent_60%)]" />
+          <div className="relative space-y-3">
+            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-rose-100 bg-white/60 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#bc1888]">
+              Sign in
+            </span>
+            <h2 className="text-2xl font-semibold text-neutral-900">
+              Welcome back to Aceternity
+            </h2>
+            <p className="max-w-md text-sm text-neutral-500">
+              Enter your email and password to continue shaping conversations and
+              stay close to the communities you love.
+            </p>
+          </div>
+
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            <LabelInputContainer>
+              <Label htmlFor="signinEmail">Email</Label>
+              <Input
+                id="signinEmail"
+                placeholder="demo2@example.com"
+                type="email"
+                value={formValues.email}
+                onChange={handleChange("email")}
+                autoComplete="email"
+              />
+            </LabelInputContainer>
+
+            <LabelInputContainer>
+              <Label htmlFor="signinPassword">Password</Label>
+              <Input
+                id="signinPassword"
+                placeholder="StrongPass123!"
+                type="password"
+                value={formValues.password}
+                onChange={handleChange("password")}
+                autoComplete="current-password"
+              />
+            </LabelInputContainer>
+
+            <button
+              className="group/btn relative inline-flex h-11 w-full items-center justify-center overflow-hidden rounded-xl bg-linear-to-r from-[#f09433] via-[#e6683c] to-[#bc1888] px-6 font-medium text-white shadow-lg shadow-rose-200/60 transition duration-300 hover:shadow-rose-300/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f09433]/60"
+              type="submit"
+            >
+              Sign in
+              <BottomGradient />
+            </button>
+
+            {isSubmitted && (
+              <p className="text-sm font-medium text-[#bc1888]">
+                Login details submitted! Check the console for the payload.
+              </p>
+            )}
+          </form>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+const SigninFeature = ({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) => {
+  return (
+    <li>
+      <h3 className="text-sm font-semibold text-white">{title}</h3>
+      <p className="mt-1 text-xs text-white/80">{description}</p>
+    </li>
+  );
+};
+
+const BottomGradient = () => {
+  return (
+    <>
+      <span className="absolute inset-x-0 -bottom-px block h-px w-full bg-linear-to-r from-transparent via-cyan-500 to-transparent opacity-0 transition duration-500 group-hover/btn:opacity-100" />
+      <span className="absolute inset-x-10 -bottom-px mx-auto block h-px w-1/2 bg-linear-to-r from-transparent via-indigo-500 to-transparent opacity-0 blur-sm transition duration-500 group-hover/btn:opacity-100" />
+    </>
+  );
+};
+
+const LabelInputContainer = ({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => {
+  return (
+    <div className={cn("flex w-full flex-col space-y-2", className)}>
+      {children}
+    </div>
+  );
+};
+
