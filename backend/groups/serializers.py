@@ -27,6 +27,8 @@ class GroupUserSerializer(serializers.ModelSerializer):
 class GroupSerializer(serializers.ModelSerializer):
     owner = GroupUserSerializer(read_only=True)
     membersCount = serializers.SerializerMethodField()
+    isMember = serializers.SerializerMethodField()
+    isOwner = serializers.SerializerMethodField()
 
     class Meta:
         model = Group
@@ -36,17 +38,33 @@ class GroupSerializer(serializers.ModelSerializer):
             'description',
             'owner',
             'membersCount',
+            'isMember',
+            'isOwner',
             'created_at',
         ]
         read_only_fields = [
             'id',
             'owner',
             'membersCount',
+            'isMember',
+            'isOwner',
             'created_at',
         ]
 
     def get_membersCount(self, obj):
         return obj.members.count()
+
+    def get_isMember(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.members.filter(pk=request.user.pk).exists()
+        return False
+
+    def get_isOwner(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.owner == request.user
+        return False
 
 
 class GroupCreateSerializer(serializers.ModelSerializer):

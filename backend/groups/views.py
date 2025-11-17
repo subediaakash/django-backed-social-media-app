@@ -1,3 +1,4 @@
+from django.db import models
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import PermissionDenied
@@ -16,7 +17,16 @@ from .serializers import (
 
 class GroupListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    queryset = Group.objects.select_related('owner').prefetch_related('members')
+
+    def get_queryset(self):
+        queryset = Group.objects.select_related('owner').prefetch_related('members')
+        search = self.request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(
+                models.Q(name__icontains=search) |
+                models.Q(description__icontains=search)
+            )
+        return queryset.order_by('-created_at')
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -105,13 +115,29 @@ class GroupPostListCreateView(generics.ListCreateAPIView):
         return group
 
     def get_queryset(self):
+        from posts.views import ViewerLikeAnnotationMixin
         group = self.get_group()
-        return (
+        queryset = (
             Post.objects.filter(group=group)
             .select_related('author', 'group')
             .prefetch_related('comments__author')
-            .order_by('-created_at')
         )
+        # Apply like annotation from mixin
+        user = self.request.user
+        if user and user.is_authenticated:
+            from django.db.models import Exists, OuterRef
+            from posts.models import Like
+            queryset = queryset.annotate(
+                liked_by_current_user=Exists(
+                    Like.objects.filter(post_id=OuterRef('pk'), user_id=user.pk)
+                )
+            )
+        else:
+            from django.db.models import Value, BooleanField
+            queryset = queryset.annotate(
+                liked_by_current_user=Value(False, output_field=BooleanField())
+            )
+        return queryset.order_by('-created_at')
 
     def perform_create(self, serializer):
         group = self.get_group()
