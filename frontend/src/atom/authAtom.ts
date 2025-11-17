@@ -23,7 +23,7 @@ export type AuthState = {
     user: AuthUser | null;
 };
 
-export const AUTH_STORAGE_KEY = "aceternity-auth";
+export const AUTH_STORAGE_KEY = "jainsocials-auth";
 
 export const defaultAuthState: AuthState = {
     tokens: null,

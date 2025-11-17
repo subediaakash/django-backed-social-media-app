@@ -90,7 +90,7 @@ export default function SignupFormDemo() {
               </h1>
 
               <p className="max-w-md text-sm text-white/85">
-                Aceternity treats every post like a story worth telling. Spark
+                JainSocials treats every post like a story worth telling. Spark
                 conversations, celebrate milestones, and be part of a community
                 that feels alive.
               </p>
@@ -123,7 +123,7 @@ export default function SignupFormDemo() {
             </span>
 
             <h2 className="text-2xl font-semibold text-neutral-900">
-              Start your Aceternity journey
+              Start your JainSocials journey
             </h2>
 
             <p className="max-w-md text-sm text-neutral-500">

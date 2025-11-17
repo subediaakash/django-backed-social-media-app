@@ -117,7 +117,7 @@ export default function SigninForm() {
               Sign in
             </span>
             <h2 className="text-2xl font-semibold text-neutral-900">
-              Welcome back to Aceternity
+              Welcome back to JainSocials
             </h2>
             <p className="max-w-md text-sm text-neutral-500">
               Enter your email and password to continue shaping conversations and

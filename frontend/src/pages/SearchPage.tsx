@@ -133,7 +133,7 @@ export default function SearchPage() {
             Search people
           </h1>
           <p className="mt-1 text-sm text-neutral-500">
-            Discover creators and collaborators across Aceternity. Start typing
+            Discover creators and collaborators across JainSocials. Start typing
             to find people by name or username.
           </p>
         </div>

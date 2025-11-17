@@ -47,7 +47,7 @@ function AuthHydrator({ children }: AppProvidersProps) {
   if (!isHydrated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-neutral-50 text-sm text-neutral-500">
-        Loading your Aceternity space...
+        Loading your JainSocials space...
       </div>
     );
   }
