@@ -11,10 +11,59 @@ from .serializers import (
     FriendRequestCreateSerializer,
     FriendRequestRespondSerializer,
     FriendRequestSerializer,
+    FriendSearchResultSerializer,
     UserSummarySerializer,
 )
 
 User = get_user_model()
+
+
+class FriendSearchView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = FriendSearchResultSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        query = self.request.query_params.get('q', '').strip()
+
+        queryset = User.objects.exclude(pk=user.pk)
+        if query:
+            queryset = queryset.filter(
+                Q(username__icontains=query)
+                | Q(first_name__icontains=query)
+                | Q(last_name__icontains=query)
+            )
+        else:
+            queryset = queryset.exclude(pk__in=user.friends.values_list('pk', flat=True))
+
+        queryset = queryset.order_by('username')
+
+        if not query:
+            queryset = queryset[:25]
+
+        return queryset
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        user = self.request.user
+        context.update(
+            {
+                'friends_ids': set(user.friends.values_list('id', flat=True)),
+                'outgoing_pending_ids': set(
+                    FriendRequest.objects.filter(
+                        sender=user,
+                        status=FriendRequest.Status.PENDING,
+                    ).values_list('receiver_id', flat=True)
+                ),
+                'incoming_pending_ids': set(
+                    FriendRequest.objects.filter(
+                        receiver=user,
+                        status=FriendRequest.Status.PENDING,
+                    ).values_list('sender_id', flat=True)
+                ),
+            }
+        )
+        return context
 
 
 class FriendListView(generics.ListAPIView):
@@ -32,12 +81,19 @@ class FriendRequestListCreateView(generics.ListCreateAPIView):
         direction = self.request.query_params.get('direction', 'incoming')
         qs = FriendRequest.objects.select_related('sender', 'receiver')
         if direction == 'outgoing':
-            return qs.filter(sender=self.request.user)
-        if direction == 'all':
-            return qs.filter(
+            qs = qs.filter(sender=self.request.user)
+        elif direction == 'all':
+            qs = qs.filter(
                 Q(sender=self.request.user) | Q(receiver=self.request.user)
             )
-        return qs.filter(receiver=self.request.user)
+        else:
+            qs = qs.filter(receiver=self.request.user)
+
+        status_param = self.request.query_params.get('status')
+        if status_param in FriendRequest.Status.values:
+            qs = qs.filter(status=status_param)
+
+        return qs
 
     def get_serializer_class(self):
         if self.request.method == 'POST':

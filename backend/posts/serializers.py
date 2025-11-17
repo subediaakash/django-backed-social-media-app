@@ -90,6 +90,7 @@ class PostSerializer(serializers.ModelSerializer):
     commentsCount = serializers.IntegerField(source='comments_count', read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
     group = GroupSummarySerializer(read_only=True)
+    viewerHasLiked = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -102,6 +103,7 @@ class PostSerializer(serializers.ModelSerializer):
             'commentsCount',
             'comments',
             'group',
+            'viewerHasLiked',
         ]
         read_only_fields = [
             'id',
@@ -111,10 +113,24 @@ class PostSerializer(serializers.ModelSerializer):
             'commentsCount',
             'comments',
             'group',
+            'viewerHasLiked',
         ]
 
     def validate_content(self, value):
         if not value.strip():
             raise serializers.ValidationError('Content cannot be empty.')
         return value
+
+    def get_viewerHasLiked(self, obj):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+
+        if not user or not user.is_authenticated:
+            return False
+
+        annotated_value = getattr(obj, 'liked_by_current_user', None)
+        if annotated_value is not None:
+            return bool(annotated_value)
+
+        return obj.post_likes.filter(user_id=user.pk).exists()
 

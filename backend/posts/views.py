@@ -1,4 +1,4 @@
-from django.db.models import F
+from django.db.models import BooleanField, Exists, F, OuterRef, Value
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import PermissionDenied
@@ -9,26 +9,44 @@ from .models import Comment, Like, Post
 from .serializers import CommentSerializer, LikeSerializer, PostSerializer
 
 
-class PostListCreateView(generics.ListCreateAPIView):
+class ViewerLikeAnnotationMixin:
+    def _annotate_viewer_like(self, queryset):
+        user = getattr(self.request, 'user', None)
+        if user and user.is_authenticated:
+            return queryset.annotate(
+                liked_by_current_user=Exists(
+                    Like.objects.filter(post_id=OuterRef('pk'), user_id=user.pk)
+                )
+            )
+        return queryset.annotate(
+            liked_by_current_user=Value(False, output_field=BooleanField())
+        )
+
+
+class PostListCreateView(ViewerLikeAnnotationMixin, generics.ListCreateAPIView):
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return (
+        queryset = (
             Post.objects.filter(group__isnull=True)
             .select_related('author')
             .prefetch_related('comments__author')
-            .order_by('-created_at')
         )
+        queryset = self._annotate_viewer_like(queryset)
+        return queryset.order_by('-created_at')
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
 
-class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
+class PostDetailView(ViewerLikeAnnotationMixin, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
-    queryset = Post.objects.select_related('author', 'group').prefetch_related('comments__author')
+
+    def get_queryset(self):
+        queryset = Post.objects.select_related('author', 'group').prefetch_related('comments__author')
+        return self._annotate_viewer_like(queryset)
 
     def get_object(self):
         post = super().get_object()
@@ -53,6 +71,7 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
             raise PermissionDenied('You must be a member of this group to access this post.')
 
 
+
 class CommentListCreateView(generics.ListCreateAPIView):
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -68,6 +87,10 @@ class CommentListCreateView(generics.ListCreateAPIView):
         self._ensure_group_access(post)
         serializer.save(author=self.request.user, post=post)
         Post.objects.filter(pk=post.pk).update(comments_count=F('comments_count') + 1)
+
+    def _ensure_group_access(self, post):
+        if post.group_id and not post.group.members.filter(pk=self.request.user.pk).exists():
+            raise PermissionDenied('You must be a member of this group to interact with comments here.')
 
 
 class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):

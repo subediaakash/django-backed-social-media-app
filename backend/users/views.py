@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .serializers import RegisterSerializer, UserProfileSerializer
+from .serializers import EmailLoginSerializer, RegisterSerializer, UserProfileSerializer
 
 
 User = get_user_model()
@@ -28,6 +28,24 @@ class RegisterView(APIView):
                 },
             },
             status=status.HTTP_201_CREATED,
+        )
+
+
+class EmailLoginView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = EmailLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        tokens = serializer.validated_data['tokens']
+        profile_data = UserProfileSerializer(user).data
+        return Response(
+            {
+                'user': profile_data,
+                'tokens': tokens,
+            },
+            status=status.HTTP_200_OK,
         )
 
 

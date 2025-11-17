@@ -23,6 +23,41 @@ class UserSummarySerializer(serializers.ModelSerializer):
         ]
 
 
+class FriendSearchResultSerializer(serializers.ModelSerializer):
+    firstName = serializers.CharField(source='first_name', read_only=True)
+    lastName = serializers.CharField(source='last_name', read_only=True)
+    profilePicture = serializers.ImageField(source='profile_picture', read_only=True)
+    relationshipStatus = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'username',
+            'firstName',
+            'lastName',
+            'profilePicture',
+            'relationshipStatus',
+        ]
+
+    def get_relationshipStatus(self, obj):
+        request = self.context['request']
+        if obj.pk == request.user.pk:
+            return 'self'
+
+        friends_ids = self.context.get('friends_ids', set())
+        outgoing_pending_ids = self.context.get('outgoing_pending_ids', set())
+        incoming_pending_ids = self.context.get('incoming_pending_ids', set())
+
+        if obj.pk in friends_ids:
+            return 'friends'
+        if obj.pk in outgoing_pending_ids:
+            return 'pending_outgoing'
+        if obj.pk in incoming_pending_ids:
+            return 'pending_incoming'
+        return 'none'
+
+
 class FriendRequestSerializer(serializers.ModelSerializer):
     sender = UserSummarySerializer(read_only=True)
     receiver = UserSummarySerializer(read_only=True)
