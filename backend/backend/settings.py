@@ -144,6 +144,7 @@ AUTH_USER_MODEL = 'users.User'
 
 CORS_ALLOWED_ORIGINS = [
     os.environ.get('FRONTEND_URL', 'http://localhost:5173'),
+    'https://socialjain.vercel.app',
 ]
 
 CORS_ALLOW_CREDENTIALS = True

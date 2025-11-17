@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useSetAtom } from "jotai";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -7,15 +7,7 @@ import { cn } from "@/lib/utils";
 import type { AuthState, AuthTokens, AuthUser } from "@/atom/authAtom";
 import { setAuthAtom } from "@/atom/authAtom";
 import { ApiError, apiRequest } from "@/lib/apiClient";
-
-const defaultUser = {
-  firstName: "Demo",
-  lastName: "User",
-  username: "demo2",
-  email: "demo2@example.com",
-  password: "StrongPass123!",
-  confirmPassword: "StrongPass123!",
-};
+import { signupSchema, type SignupFormData } from "@/lib/validationSchemas";
 
 type RegisterResponse = {
   user: AuthUser;
@@ -23,7 +15,15 @@ type RegisterResponse = {
 };
 
 export default function SignupFormDemo() {
-  const [formValues, setFormValues] = React.useState(defaultUser);
+  const [formValues, setFormValues] = React.useState<SignupFormData>({
+    firstName: "",
+    lastName: "",
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [validationErrors, setValidationErrors] = React.useState<Partial<Record<keyof SignupFormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -38,19 +38,31 @@ export default function SignupFormDemo() {
       ...prev,
       [name]: value,
     }));
+
+    // Clear validation error for this field when user starts typing
+    if (validationErrors[name as keyof SignupFormData]) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [name]: undefined,
+      }));
+    }
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
     setError(null);
+    setValidationErrors({});
 
     try {
-      const response = await apiRequest<RegisterResponse, typeof formValues>(
+      // Validate form data
+      const validatedData = signupSchema.parse(formValues);
+
+      const response = await apiRequest<RegisterResponse, typeof validatedData>(
         "/auth/register/",
         {
           method: "POST",
-          body: formValues,
+          body: validatedData,
         },
       );
 
@@ -62,9 +74,24 @@ export default function SignupFormDemo() {
       setAuth(authState);
       navigate("/");
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message);
-      else if (err instanceof Error) setError(err.message);
-      else setError("Something went wrong creating your account.");
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else if (err instanceof Error) {
+        // Check if it's a Zod validation error
+        const zodError = err as { issues?: Array<{ path: (string | number)[]; message: string }> };
+        if (zodError.issues) {
+          const fieldErrors: Partial<Record<keyof SignupFormData, string>> = {};
+          zodError.issues.forEach((issue) => {
+            const field = issue.path[0] as keyof SignupFormData;
+            fieldErrors[field] = issue.message;
+          });
+          setValidationErrors(fieldErrors);
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError("Something went wrong creating your account.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -140,12 +167,16 @@ export default function SignupFormDemo() {
                 <Input
                   id="firstName"
                   name="firstName"
-                  placeholder="Demo"
+                  placeholder="Enter your first name"
                   type="text"
                   value={formValues.firstName}
                   onChange={handleChange}
                   autoComplete="given-name"
+                  className={validationErrors.firstName ? "border-red-500 focus:ring-red-500" : ""}
                 />
+                {validationErrors.firstName && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.firstName}</p>
+                )}
               </LabelInputContainer>
 
               <LabelInputContainer>
@@ -153,12 +184,16 @@ export default function SignupFormDemo() {
                 <Input
                   id="lastName"
                   name="lastName"
-                  placeholder="User"
+                  placeholder="Enter your last name"
                   type="text"
                   value={formValues.lastName}
                   onChange={handleChange}
                   autoComplete="family-name"
+                  className={validationErrors.lastName ? "border-red-500 focus:ring-red-500" : ""}
                 />
+                {validationErrors.lastName && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.lastName}</p>
+                )}
               </LabelInputContainer>
 
               <LabelInputContainer className="sm:col-span-2">
@@ -166,12 +201,16 @@ export default function SignupFormDemo() {
                 <Input
                   id="username"
                   name="username"
-                  placeholder="demo2"
+                  placeholder="Choose a unique username"
                   type="text"
                   value={formValues.username}
                   onChange={handleChange}
                   autoComplete="username"
+                  className={validationErrors.username ? "border-red-500 focus:ring-red-500" : ""}
                 />
+                {validationErrors.username && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.username}</p>
+                )}
               </LabelInputContainer>
 
               <LabelInputContainer className="sm:col-span-2">
@@ -179,12 +218,16 @@ export default function SignupFormDemo() {
                 <Input
                   id="email"
                   name="email"
-                  placeholder="demo2@example.com"
+                  placeholder="Enter your email address"
                   type="email"
                   value={formValues.email}
                   onChange={handleChange}
                   autoComplete="email"
+                  className={validationErrors.email ? "border-red-500 focus:ring-red-500" : ""}
                 />
+                {validationErrors.email && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.email}</p>
+                )}
               </LabelInputContainer>
 
               <LabelInputContainer>
@@ -192,12 +235,16 @@ export default function SignupFormDemo() {
                 <Input
                   id="password"
                   name="password"
-                  placeholder="StrongPass123!"
+                  placeholder="Create a strong password"
                   type="password"
                   value={formValues.password}
                   onChange={handleChange}
                   autoComplete="new-password"
+                  className={validationErrors.password ? "border-red-500 focus:ring-red-500" : ""}
                 />
+                {validationErrors.password && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.password}</p>
+                )}
               </LabelInputContainer>
 
               <LabelInputContainer>
@@ -205,12 +252,16 @@ export default function SignupFormDemo() {
                 <Input
                   id="confirmPassword"
                   name="confirmPassword"
-                  placeholder="StrongPass123!"
+                  placeholder="Confirm your password"
                   type="password"
                   value={formValues.confirmPassword}
                   onChange={handleChange}
                   autoComplete="new-password"
+                  className={validationErrors.confirmPassword ? "border-red-500 focus:ring-red-500" : ""}
                 />
+                {validationErrors.confirmPassword && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.confirmPassword}</p>
+                )}
               </LabelInputContainer>
             </div>
 
@@ -226,6 +277,16 @@ export default function SignupFormDemo() {
             {error && (
               <p className="text-sm font-medium text-rose-500">{error}</p>
             )}
+
+            <p className="text-center text-sm text-neutral-600">
+              Already have an account?{" "}
+              <Link
+                to="/signin"
+                className="font-medium text-[#bc1888] hover:text-[#f09433] transition-colors duration-200"
+              >
+                Sign in
+              </Link>
+            </p>
           </form>
         </section>
       </div>

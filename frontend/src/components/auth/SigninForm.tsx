@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useSetAtom } from "jotai";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -8,13 +8,9 @@ import { cn } from "@/lib/utils";
 import type { AuthState, AuthTokens, AuthUser } from "@/atom/authAtom";
 import { setAuthAtom } from "@/atom/authAtom";
 import { ApiError, apiRequest } from "@/lib/apiClient";
+import { signinSchema, type SigninFormData } from "@/lib/validationSchemas";
 
-const demoCredentials = {
-  email: "demo2@example.com",
-  password: "StrongPass123!",
-};
-
-type SigninField = keyof typeof demoCredentials;
+type SigninField = keyof SigninFormData;
 
 type SigninResponse = {
   user: AuthUser;
@@ -22,7 +18,11 @@ type SigninResponse = {
 };
 
 export default function SigninForm() {
-  const [formValues, setFormValues] = React.useState(demoCredentials);
+  const [formValues, setFormValues] = React.useState<SigninFormData>({
+    email: "",
+    password: "",
+  });
+  const [validationErrors, setValidationErrors] = React.useState<Partial<Record<keyof SigninFormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const setAuth = useSetAtom(setAuthAtom);
@@ -32,26 +32,35 @@ export default function SigninForm() {
     (field: SigninField) =>
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
-      setFormValues((prev) => {
-        const next = {
+      setFormValues((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+
+      // Clear validation error for this field when user starts typing
+      if (validationErrors[field]) {
+        setValidationErrors((prev) => ({
           ...prev,
-          [field]: value,
-        };
-        console.log("Signin form values", next);
-        return next;
-      });
+          [field]: undefined,
+        }));
+      }
     };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
     setError(null);
+    setValidationErrors({});
+
     try {
-      const response = await apiRequest<SigninResponse, typeof formValues>(
+      // Validate form data
+      const validatedData = signinSchema.parse(formValues);
+
+      const response = await apiRequest<SigninResponse, typeof validatedData>(
         "/auth/login/",
         {
           method: "POST",
-          body: formValues,
+          body: validatedData,
         },
       );
 
@@ -66,7 +75,18 @@ export default function SigninForm() {
       if (err instanceof ApiError) {
         setError(err.message);
       } else if (err instanceof Error) {
-        setError(err.message);
+        // Check if it's a Zod validation error
+        const zodError = err as { issues?: Array<{ path: (string | number)[]; message: string }> };
+        if (zodError.issues) {
+          const fieldErrors: Partial<Record<keyof SigninFormData, string>> = {};
+          zodError.issues.forEach((issue) => {
+            const field = issue.path[0] as keyof SigninFormData;
+            fieldErrors[field] = issue.message;
+          });
+          setValidationErrors(fieldErrors);
+        } else {
+          setError(err.message);
+        }
       } else {
         setError("Unable to sign in. Please try again.");
       }
@@ -130,24 +150,32 @@ export default function SigninForm() {
               <Label htmlFor="signinEmail">Email</Label>
               <Input
                 id="signinEmail"
-                placeholder="demo2@example.com"
+                placeholder="Enter your email address"
                 type="email"
                 value={formValues.email}
                 onChange={handleChange("email")}
                 autoComplete="email"
+                className={validationErrors.email ? "border-red-500 focus:ring-red-500" : ""}
               />
+              {validationErrors.email && (
+                <p className="text-sm text-red-500 mt-1">{validationErrors.email}</p>
+              )}
             </LabelInputContainer>
 
             <LabelInputContainer>
               <Label htmlFor="signinPassword">Password</Label>
               <Input
                 id="signinPassword"
-                placeholder="StrongPass123!"
+                placeholder="Enter your password"
                 type="password"
                 value={formValues.password}
                 onChange={handleChange("password")}
                 autoComplete="current-password"
+                className={validationErrors.password ? "border-red-500 focus:ring-red-500" : ""}
               />
+              {validationErrors.password && (
+                <p className="text-sm text-red-500 mt-1">{validationErrors.password}</p>
+              )}
             </LabelInputContainer>
 
             <button
@@ -162,6 +190,16 @@ export default function SigninForm() {
             {error && (
               <p className="text-sm font-medium text-rose-500">{error}</p>
             )}
+
+            <p className="text-center text-sm text-neutral-600">
+              Don't have an account?{" "}
+              <Link
+                to="/signup"
+                className="font-medium text-[#bc1888] hover:text-[#f09433] transition-colors duration-200"
+              >
+                Sign up
+              </Link>
+            </p>
           </form>
         </section>
       </div>
