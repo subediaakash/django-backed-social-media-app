@@ -1,12 +1,14 @@
-import type { AuthTokens } from "@/atom/authAtom";
-import { apiRequest } from "@/lib/apiClient";
+import type { AuthTokens } from "../atom/authAtom";
+import { apiRequest } from "./apiClient";
 
 type TokenRefreshResponse = {
     access: string;
     refresh?: string;
 };
 
-export async function refreshTokens(refreshToken: string): Promise<AuthTokens> {
+export async function refreshTokens(
+    refreshToken: string,
+): Promise<AuthTokens> {
     const response = await apiRequest<
         TokenRefreshResponse,
         { refresh: string }

@@ -21,9 +21,9 @@ export default function ProfilePage() {
     .join("") || "G";
 
   return (
-    <div className="space-y-6">
+    <div className="flex h-full min-h-0 flex-col gap-6">
       <CardComponent className="flex flex-col gap-6 p-6">
-        <header className="flex items-center gap-4">
+        <header className="flex flex-wrap items-center gap-4">
           {user?.profilePicture ? (
             <img
               alt={displayName}

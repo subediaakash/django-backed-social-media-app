@@ -6,8 +6,8 @@ import {
     clearAuthAtom,
     isAuthenticatedAtom,
     updateAuthAtom,
-} from "@/atom/authAtom";
-import { ApiError } from "@/lib/apiClient";
+} from "../atom/authAtom";
+import { ApiError } from "../lib/apiClient";
 import { refreshTokens } from "@/lib/auth";
 
 export function useAuthedRequest() {

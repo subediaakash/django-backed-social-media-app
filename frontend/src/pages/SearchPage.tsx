@@ -126,7 +126,7 @@ export default function SearchPage() {
     : "We’ll keep curating new people you might want to connect with.";
 
   return (
-    <div className="space-y-6">
+    <div className="flex h-full min-h-0 flex-col gap-6">
       <CardComponent className="space-y-5 p-6">
         <div>
           <h1 className="text-xl font-semibold text-neutral-900">
@@ -160,8 +160,8 @@ export default function SearchPage() {
         )}
       </CardComponent>
 
-      <CardComponent className="space-y-4 p-6">
-        <div>
+      <CardComponent className="flex min-h-0 flex-1 flex-col gap-4 p-6">
+        <div className="shrink-0">
           <h2 className="text-lg font-semibold text-neutral-900">{heading}</h2>
           {authState.user && (
             <p className="text-xs text-neutral-500">
@@ -170,15 +170,15 @@ export default function SearchPage() {
           )}
         </div>
 
-        {isInitialLoading ? (
-          <LoadingState />
-        ) : searchError ? (
-          <ErrorState message={searchError} />
-        ) : results.length === 0 ? (
-          <EmptyState message={emptyMessage} />
-        ) : (
-          <div className="space-y-3">
-            {results.map((person) => (
+        <div className="min-h-0 flex-1 overflow-y-auto space-y-3">
+          {isInitialLoading ? (
+            <LoadingState />
+          ) : searchError ? (
+            <ErrorState message={searchError} />
+          ) : results.length === 0 ? (
+            <EmptyState message={emptyMessage} />
+          ) : (
+            results.map((person) => (
               <PersonResultCard
                 key={person.id}
                 person={person}
@@ -187,9 +187,9 @@ export default function SearchPage() {
                   sendFriendRequestMutation.mutate(person.id)
                 }
               />
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
 
         {isRefreshing && (
           <p className="text-xs text-neutral-400">Updating suggestions…</p>

@@ -25,7 +25,7 @@ export default function SidebarComponent({
   isLoggingOut = false,
 }: SidebarComponentProps) {
   return (
-    <CardComponent className="flex h-full flex-col justify-between p-5">
+    <CardComponent className="flex h-full flex-col justify-between overflow-hidden p-5">
       <div className="space-y-6">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[#bc1888]">
@@ -35,7 +35,7 @@ export default function SidebarComponent({
             Aceternity
           </span>
         </div>
-        <nav className="space-y-3">
+        <nav className="space-y-3 overflow-y-auto pr-1">
           {navigation.map((item) => (
             <NavLink
               className={({ isActive }) =>

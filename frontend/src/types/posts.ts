@@ -22,4 +22,5 @@ export type Post = {
     commentsCount: number;
     author: PostAuthor;
     comments: PostComment[];
+    viewerHasLiked: boolean;
 };

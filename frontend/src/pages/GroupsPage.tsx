@@ -19,7 +19,7 @@ const featuredGroups = [
 
 export default function GroupsPage() {
   return (
-    <div className="space-y-6">
+    <div className="flex h-full min-h-0 flex-col gap-6">
       <CardComponent className="space-y-4 p-6">
         <div>
           <h1 className="text-xl font-semibold text-neutral-900">Groups</h1>
@@ -28,8 +28,10 @@ export default function GroupsPage() {
             new group or explore some of the featured communities below.
           </p>
         </div>
+      </CardComponent>
 
-        <div className="space-y-3">
+      <CardComponent className="min-h-0 flex-1 overflow-hidden p-0">
+        <div className="h-full overflow-y-auto space-y-3 p-6">
           {featuredGroups.map((group) => (
             <CardComponent
               className="space-y-1 border border-rose-100 bg-white/85 p-4 text-sm text-neutral-600 shadow-sm"

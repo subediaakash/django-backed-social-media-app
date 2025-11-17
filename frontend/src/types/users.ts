@@ -5,11 +5,23 @@ export type RelationshipStatus =
     | "pending_outgoing"
     | "none";
 
-export type PeopleSearchResult = {
+export type UserSummary = {
     id: number;
     username: string;
     firstName: string | null;
     lastName: string | null;
     profilePicture: string | null;
+};
+
+export type PeopleSearchResult = UserSummary & {
     relationshipStatus: RelationshipStatus;
+};
+
+export type FriendRequestSummary = {
+    id: number;
+    status: "pending" | "accepted" | "rejected";
+    createdAt: string;
+    respondedAt: string | null;
+    sender: UserSummary;
+    receiver: UserSummary;
 };
